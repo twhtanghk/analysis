@@ -16,14 +16,20 @@ module.exports =
     y = EMA.calculate {period, values}
     {x, y}
 
-  indicators: (rows) ->
-    ema =
-      20: module.exports.ema rows, 20
-      60: module.exports.ema rows, 60
-      120: module.exports.ema rows, 120
-    'c/s': rows[0].close / ema[20].y[0]
-    's/m': ema[20].y[0] / ema[60].y[0]
-    'm/l': ema[60].y[0] / ema[120].y[0]
+  indicators: (data) ->
+    if Array.isArray data
+      ema =
+        20: module.exports.ema data, 20
+        60: module.exports.ema data, 60
+        120: module.exports.ema data, 120
+      'c/s': data[0].close / ema[20].y[0]
+      's/m': ema[20].y[0] / ema[60].y[0]
+      'm/l': ema[60].y[0] / ema[120].y[0]
+    else
+      ret = {}
+      for symbol, values of data
+        ret[symbol] = module.exports.indicators values
+      ret
 
   graphQL: (query) ->
     await needle 'post', url, {query}, json: true
