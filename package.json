@@ -1,0 +1,29 @@
+{
+  "name": "analysis",
+  "version": "0.0.1",
+  "description": "price data analysis",
+  "main": "index.coffee",
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "test": "coffee test/index.coffee"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/twhtanghk/analysis.git"
+  },
+  "author": "Tommy Tang",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/twhtanghk/analysis/issues"
+  },
+  "homepage": "https://github.com/twhtanghk/analysis#readme",
+  "dependencies": {
+    "coffeescript": "^2.5.1",
+    "moment": "^2.29.1",
+    "needle": "^2.5.2",
+    "technicalindicators": "^3.1.0",
+    "yahoo-stock-api": "^1.0.5"
+  }
+}
