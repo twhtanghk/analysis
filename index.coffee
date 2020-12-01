@@ -16,8 +16,12 @@ module.exports =
     y = EMA.calculate {period, values}
     {x, y}
 
-  indicators: (data) ->
-    if Array.isArray data
+  indicators: (symbol) ->
+    if Array.isArray symbol
+      for s in symbol
+        await module.exports.indicators s
+    else
+      data = await module.exports.ohlc.stock symbol, 180
       ema =
         20: module.exports.ema data, 20
         60: module.exports.ema data, 60
@@ -25,11 +29,6 @@ module.exports =
       'c/s': data[0].close / ema[20].y[0]
       's/m': ema[20].y[0] / ema[60].y[0]
       'm/l': ema[60].y[0] / ema[120].y[0]
-    else
-      ret = {}
-      for symbol, values of data
-        ret[symbol] = module.exports.indicators values
-      ret
 
   graphQL: (query) ->
     await needle 'post', url, {query}, json: true
