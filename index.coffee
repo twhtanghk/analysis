@@ -4,7 +4,29 @@ url = 'https://api.thegraph.com/subgraphs/name/uniswap/uniswap-v2'
 needle = require 'needle'
 {EMA} = require 'technicalindicators'
 
+
 module.exports =
+  pattern:
+    aastock: /^0*([0-9]+)$/
+    yahoo: /^0*([0-9]+)\.HK$/
+
+  symbol: 
+    yahoo: (code) ->
+      {aastock, yahoo} = module.exports.pattern
+      ret = code
+      if aastock.test code
+        ret = (code.match aastock)[1]
+          .padStart 4, '0'
+          .concat '.HK'
+      ret
+    aastock: (code) ->
+      {aastock, yahoo} = module.exports.pattern
+      ret = code    
+      if yahoo.test code
+        ret = (code.match yahoo)[1]
+          .padStart 5, '0'
+      ret
+
   unpack: (rows, key) ->
     rows.map (row) ->
       row[key]
@@ -21,6 +43,7 @@ module.exports =
       for s in symbol
         await module.exports.indicators s
     else
+      symbol = module.exports.symbol.yahoo symbol
       data = await module.exports.ohlc.stock symbol, 180
       ema =
         20: module.exports.ema data, 20
