@@ -4,7 +4,6 @@ url = 'https://api.thegraph.com/subgraphs/name/uniswap/uniswap-v2'
 needle = require 'needle'
 {EMA} = require 'technicalindicators'
 
-
 module.exports =
   pattern:
     aastock: /^0*([0-9]+)$/
@@ -14,11 +13,10 @@ module.exports =
     yahoo: (code) ->
       {aastock, yahoo} = module.exports.pattern
       ret = code
-      if aastock.test code
-        ret = (code.match aastock)[1]
-          .padStart 4, '0'
-          .concat '.HK'
-      ret
+      pattern = if aastock.test code then aastock else yahoo
+      (code.match pattern)[1]
+        .padStart 4, '0'
+        .concat '.HK'
     aastock: (code) ->
       {aastock, yahoo} = module.exports.pattern
       ret = code    
@@ -52,6 +50,14 @@ module.exports =
       'c/s': data[0].close / ema[20].y[0]
       's/m': ema[20].y[0] / ema[60].y[0]
       'm/l': ema[60].y[0] / ema[120].y[0]
+
+  percentMA20: (stocks) ->
+    overMA20 = 0
+    for symbol in stocks
+      indicators = await module.exports.indicators symbol
+      if indicators['c/s'] > 1
+        overMA20++
+    overMA20 / stocks.length * 100
 
   graphQL: (query) ->
     await needle 'post', url, {query}, json: true

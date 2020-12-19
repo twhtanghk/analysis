@@ -25,5 +25,8 @@
     "needle": "^2.5.2",
     "technicalindicators": "^3.1.0",
     "yahoo-stock-api": "^1.0.5"
+  },
+  "devDependencies": {
+    "aastocks": "git+https://github.com/twhtanghk/aastocks.git"
   }
 }

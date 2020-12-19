@@ -1,4 +1,12 @@
-{indicators} = require '../index'
+{browser, Industry} = require 'aastocks'
+{percentMA20} = require '../index'
 
 do ->
-  console.log await indicators ['0388.HK', '9988.HK']
+  industry = new Industry browser: await browser()
+  for name, href of await industry.list()
+    try
+      stocks = await industry.constituent href
+      console.log name
+      console.log await percentMA20 stocks
+    catch err
+      console.error err
