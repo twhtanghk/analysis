@@ -3,11 +3,8 @@
   "version": "0.0.1",
   "description": "price data analysis",
   "main": "index.coffee",
-  "directories": {
-    "test": "test"
-  },
   "scripts": {
-    "test": "coffee test/index.coffee"
+    "test": "mocha test/*.coffee"
   },
   "repository": {
     "type": "git",
@@ -27,6 +24,7 @@
     "yahoo-stock-api": "^1.0.5"
   },
   "devDependencies": {
-    "aastocks": "git+https://github.com/twhtanghk/aastocks.git"
+    "aastocks": "git+https://github.com/twhtanghk/aastocks.git",
+    "mocha": "^7.2.0"
   }
 }

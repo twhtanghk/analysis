@@ -34,36 +34,35 @@ module.exports =
     x = module.exports.unpack rows, 'date'
       .slice 0, rows.length - period + 1
     y = EMA.calculate {period, values}
-    {x, y}
+    x.map (date, i) ->
+      date: date
+      ema: y[i]
 
-  indicators: (symbol) ->
-    if Array.isArray symbol
-      for s in symbol
-        await module.exports.indicators s
-    else
-      symbol = module.exports.symbol.yahoo symbol
-      data = await module.exports.ohlc.stock symbol, 180
-      ema =
-        20: module.exports.ema data, 20
-        60: module.exports.ema data, 60
-        120: module.exports.ema data, 120
-      'c/s': data[0].close / ema[20].y[0]
-      's/m': ema[20].y[0] / ema[60].y[0]
-      'm/l': ema[60].y[0] / ema[120].y[0]
+  indicators: (rows) ->
+    ema = [
+      module.exports.ema rows, 20 - 1
+      module.exports.ema rows, 60 - 1
+      module.exports.ema rows, 120 - 1
+    ]
+    'c/s': rows[0].close / ema[0][0].ema
+    's/m': ema[0][0].ema / ema[1][0].ema
+    'm/l': ema[1][0].ema / ema[2][0].ema
 
-  percentMA20: (stocks) ->
+  percentMA20: (symbols) ->
     overMA20 = 0
-    for symbol in stocks
-      indicators = await module.exports.indicators symbol
-      if indicators['c/s'] > 1
+    for symbol in symbols 
+      data = await module.exports.ohlc.stock symbol, 180
+      ema20 = module.exports.ema data, 20
+      if data[0]?.close > ema20[0]?.ema
         overMA20++
-    overMA20 / stocks.length * 100
+    overMA20 / symbols.length * 100
 
   graphQL: (query) ->
     await needle 'post', url, {query}, json: true
     
   ohlc:
     stock: (symbol, days=365) ->
+      symbol = module.exports.symbol.yahoo symbol
       start = moment()
         .subtract days, 'days'
         .toDate()
