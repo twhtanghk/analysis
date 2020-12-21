@@ -85,7 +85,7 @@ do ->
 ]
 ```
 
-### get close/ema20, ema20/ema60, ema60/eam120 of specified stock
+### get close/ema20, ema20/ema60, ema60/ema120 of specified stock
 ```
 {ohlc, indicators} = require 'analysis'
 
