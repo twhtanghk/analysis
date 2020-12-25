@@ -73,7 +73,7 @@ module.exports =
         not row.type
 
     cryptoCurr: (symbol, days=365) ->
-      {id} = (await module.exports.graphQL "{tokens (first: 1, orderDirection: desc, orderBy: tradeVolume, where: {symbol: \"#{symbol}\"}) { id symbol name tradeVolume }}")
+      {id} = (await module.exports.graphQL "{tokens (first: 1, orderDirection: desc, orderBy: tradeVolume, where: {name: \"#{symbol}\"}) { id symbol name tradeVolume }}")
         .body.data.tokens[0]
       data = (await module.exports.graphQL "{tokenDayDatas (first: #{days}, orderBy: date, orderDirection: desc, where:{token: \"#{id}\"}){ id date priceUSD dailyVolumeUSD } }")
         .body.data.tokenDayDatas

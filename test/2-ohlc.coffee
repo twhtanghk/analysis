@@ -5,4 +5,4 @@ describe 'ohlc', ->
     console.log await ohlc.stock '0700.HK'
 
   it 'cryptoCurr', ->
-    console.log await ohlc.cryptoCurr 'WETH'
+    console.log await ohlc.cryptoCurr 'Wrapped Ether'
