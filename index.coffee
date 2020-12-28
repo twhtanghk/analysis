@@ -13,10 +13,11 @@ module.exports =
     yahoo: (code) ->
       {aastock, yahoo} = module.exports.pattern
       ret = code
-      pattern = if aastock.test code then aastock else yahoo
-      (code.match pattern)[1]
-        .padStart 4, '0'
-        .concat '.HK'
+      if aastock.test code
+        ret = (code.match aastock)[1]
+          .padStart 4, '0'
+          .concat '.HK'
+      ret
     aastock: (code) ->
       {aastock, yahoo} = module.exports.pattern
       ret = code    

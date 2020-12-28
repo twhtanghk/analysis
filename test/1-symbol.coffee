@@ -7,3 +7,6 @@ describe "symbol", ->
 
  it 'aastock', ->
    console.log symbol.aastock '0700.HK'
+
+ it 'unknown', ->
+   console.log symbol.yahoo '^HSI'
