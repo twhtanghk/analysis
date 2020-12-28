@@ -17,6 +17,7 @@
   },
   "homepage": "https://github.com/twhtanghk/analysis#readme",
   "dependencies": {
+    "aastocks": "git+https://github.com/twhtanghk/aastocks.git",
     "coffeescript": "^2.5.1",
     "moment": "^2.29.1",
     "needle": "^2.5.2",
@@ -24,7 +25,6 @@
     "yahoo-stock-api": "^1.0.5"
   },
   "devDependencies": {
-    "aastocks": "git+https://github.com/twhtanghk/aastocks.git",
     "mocha": "^7.2.0"
   }
 }

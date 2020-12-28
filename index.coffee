@@ -49,14 +49,50 @@ module.exports =
     's/m': ema[0][0].ema / ema[1][0].ema
     'm/l': ema[1][0].ema / ema[2][0].ema
 
-  percentMA20: (symbols) ->
-    overMA20 = 0
-    for symbol in symbols 
-      data = await module.exports.ohlc.stock symbol, 180
-      ema20 = module.exports.ema data, 20
-      if data[0]?.close > ema20[0]?.ema
-        overMA20++
-    overMA20 / symbols.length * 100
+  # convert [{date: date1, k1: v1, ..} ...] 
+  # to {date: {date: date1, k1: v1, ...}, ...}
+  # with date reset its time to midnight
+  dateOnly: (rows) ->
+    ret = {}
+    for row in rows
+      k = moment new Date row.date * 1000
+        .set 'hour', 0
+        .set 'minute', 0
+        .set 'second', 0
+        .set 'millisecond', 0
+        .toDate()
+        .getTime()
+      ret[k] = row
+    ret
+
+  percentMA20: (symbols, days=180) ->
+    ret = {}
+    for symbol in symbols
+      data = await module.exports.ohlc.stock symbol, days
+      map = module.exports.dateOnly data
+      for date, row of module.exports.dateOnly module.exports.ema data, 20
+        if not ret[date]?
+          ret[date] = {}
+        ret[date][symbol] = 
+          ema: row.ema
+          close: map[date]?.close
+    for date, set of ret
+      overEMA = 0
+      for symbol, {ema, close} of set
+        if close >= ema
+          overEMA++
+      ret[date] = overEMA / symbols.length * 100
+    ret
+          
+  breadth: (peerSymbol) ->
+    try
+      {browser, Peers} = require 'aastocks'
+      peers = new Peers browser: await browser()
+      symbols = await peers.list peerSymbol
+      symbols: symbols
+      breadth: await module.exports.percentMA20 symbols
+    finally
+      peers.browser.close()
 
   graphQL: (query) ->
     await needle 'post', url, {query}, json: true
