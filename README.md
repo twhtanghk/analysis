@@ -100,16 +100,46 @@ do ->
 }
 ```
 
+### get peers stock of input symbol
+```
+{peers} = require '../index'
+
+do ->
+  console.log await peers '700'
+```
+```
+[
+  '0082', '0136', '0250', '0302', '0327', '0395',
+  ...
+]
+```
+
 ### get percentage of stocks its closing price higher than EMA20 
 ```
-{browser, Peers} = require 'aastocks'
 {percentMA20} = require 'analysis'
 
 do ->
-  peers = new Peers browser: await browser()
   console.log await percentMA20 await peers.list '700'
-  peers.browser.close()
 ```
 ```
-51.515151515151516
+{
+  '1596556800000': 51.5625,
+  '1596470400000': 50,
+  ...
+}
+```
+
+### get market breadth for the peers of input stock
+```
+{breadth} = require 'analysis'
+
+do ->
+  console.log await breadth '700'
+```
+```
+{
+  '1596556800000': 51.5625,
+  '1596470400000': 50,
+  ...
+}
 ```

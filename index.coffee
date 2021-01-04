@@ -1,3 +1,4 @@
+Promise = require 'bluebird'
 {getHistoricalPrices} = require 'yahoo-stock-api'
 moment = require 'moment'
 url = 'https://api.thegraph.com/subgraphs/name/uniswap/uniswap-v2'
@@ -84,15 +85,30 @@ module.exports =
       ret[date] = overEMA / symbols.length * 100
     ret
           
-  breadth: (peerSymbol) ->
-    try
-      {browser, Peers} = require 'aastocks'
-      peers = new Peers browser: await browser()
-      symbols = await peers.list peerSymbol
-      symbols: symbols
-      breadth: await module.exports.percentMA20 symbols
-    finally
-      peers.browser.close()
+  peers: (peerSymbol) ->
+    client = require 'mqtt'
+      .connect process.env.MQTTURL,
+        username: process.env.MQTTUSER
+        clientId: process.env.MQTTCLIENT
+        clean: false
+    ret = new Promise (resolve, reject) ->
+      client
+        .on 'connect', ->
+          client.subscribe 'stock/aastocks/peers', qos: 2
+        .on 'message', (topic, msg) ->
+          if topic == 'stock/aastocks/peers'
+            {peers} = JSON.parse msg.toString()
+            resolve peers
+        .publish 'stock/peers', peerSymbol
+    await ret
+      .timeout 5000
+      .finally ->
+        client.end()
+    
+  breadth: (peerSymbol, days=180) ->
+    symbols = await module.exports.peers peerSymbol
+    symbols: symbols
+    breadth: await module.exports.percentMA20 symbols, days
 
   graphQL: (query) ->
     await needle 'post', url, {query}, json: true

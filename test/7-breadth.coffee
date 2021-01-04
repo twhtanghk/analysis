@@ -1,4 +1,3 @@
-{browser, Peers} = require 'aastocks'
 {breadth} = require '../index'
 
 describe 'breadth', ->
