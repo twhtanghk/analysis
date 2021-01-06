@@ -114,32 +114,17 @@ do ->
 ]
 ```
 
-### get percentage of stocks its closing price higher than EMA20 
-```
-{percentMA20} = require 'analysis'
-
-do ->
-  console.log await percentMA20 await peers.list '700'
-```
-```
-{
-  '1596556800000': 51.5625,
-  '1596470400000': 50,
-  ...
-}
-```
-
-### get market breadth for the peers of input stock
+### get market breadth percentage of stocks its closing price higher than EMA20 
 ```
 {breadth} = require 'analysis'
 
 do ->
-  console.log await breadth '700'
+  console.log await breadth await peers.list '700'
 ```
 ```
-{
-  '1596556800000': 51.5625,
-  '1596470400000': 50,
-  ...
-}
+[
+  { date: 2020-08-12T16:00:00.000Z, percent: 57.6271186440678 },
+  { date: 2020-08-11T16:00:00.000Z, percent: 50.847457627118644 },
+  ... 4 more items
+]
 ```

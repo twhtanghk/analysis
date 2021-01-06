@@ -66,7 +66,7 @@ module.exports =
       ret[k] = row
     ret
 
-  percentMA20: (symbols, days=180) ->
+  breadth: (symbols, days=180) ->
     ret = {}
     for symbol in symbols
       try
@@ -87,7 +87,9 @@ module.exports =
         if close >= ema
           overEMA++
       ret[date] = overEMA / length * 100
-    ret
+    for date, percent of ret
+      date: new Date parseInt date
+      percent: percent
           
   peers: (peerSymbol) ->
     client = require 'mqtt'
@@ -109,11 +111,6 @@ module.exports =
       .finally ->
         client.end()
     
-  breadth: (peerSymbol, days=180) ->
-    symbols = await module.exports.peers peerSymbol
-    symbols: symbols
-    breadth: await module.exports.percentMA20 symbols, days
-
   graphQL: (query) ->
     await needle 'post', url, {query}, json: true
     
