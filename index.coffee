@@ -69,20 +69,24 @@ module.exports =
   percentMA20: (symbols, days=180) ->
     ret = {}
     for symbol in symbols
-      data = await module.exports.ohlc.stock symbol, days
-      map = module.exports.dateOnly data
-      for date, row of module.exports.dateOnly module.exports.ema data, 20
-        if not ret[date]?
-          ret[date] = {}
-        ret[date][symbol] = 
-          ema: row.ema
-          close: map[date]?.close
+      try
+        data = await module.exports.ohlc.stock symbol, days
+        map = module.exports.dateOnly data
+        for date, row of module.exports.dateOnly module.exports.ema data, 20
+          if not ret[date]?
+            ret[date] = {}
+          ret[date][symbol] = 
+            ema: row.ema
+            close: map[date]?.close
+      catch e
+        console.error "error in loading #{symbol} data"
     for date, set of ret
       overEMA = 0
+      length = (symbol for symbol, {ema, close} of set).length
       for symbol, {ema, close} of set
         if close >= ema
           overEMA++
-      ret[date] = overEMA / symbols.length * 100
+      ret[date] = overEMA / length * 100
     ret
           
   peers: (peerSymbol) ->
