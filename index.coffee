@@ -1,3 +1,4 @@
+_ = require 'lodash'
 Promise = require 'bluebird'
 {getHistoricalPrices} = require 'yahoo-stock-api'
 moment = require 'moment'
@@ -41,6 +42,10 @@ module.exports =
       ema: y[i]
 
   indicators: (rows) ->
+    max = _.maxBy(rows, 'high').high
+    min = _.minBy(rows, 'low').low
+    close = _.maxBy(rows, 'date').close
+    open = _.minBy(rows, 'date').open
     ema = [
       module.exports.ema rows, 20 - 1
       module.exports.ema rows, 60 - 1
@@ -49,6 +54,16 @@ module.exports =
     'c/s': rows[0].close / ema[0][0].ema
     's/m': ema[0][0].ema / ema[1][0].ema
     'm/l': ema[1][0].ema / ema[2][0].ema
+    'max': max
+    'min': min
+    'close': close
+    'open': open
+    'diff': 
+      'up': (max - close) / close * 100
+      'down': (close - min) / close * 100
+    'date':
+      'start': _.minBy(rows, 'date').date
+      'end': _.maxBy(rows, 'date').date
 
   # convert [{date: date1, k1: v1, ..} ...] 
   # to {date: {date: date1, k1: v1, ...}, ...}
