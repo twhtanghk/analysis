@@ -5,6 +5,7 @@ moment = require 'moment'
 url = 'https://api.thegraph.com/subgraphs/name/uniswap/uniswap-v2'
 needle = require 'needle'
 {EMA} = require 'technicalindicators'
+{CandleGranularity, ProductEvent} = require 'coinbase-pro-node'
 
 module.exports =
   pattern:
@@ -34,22 +35,22 @@ module.exports =
 
   ema: (rows, period) ->
     values = module.exports.unpack rows, 'close'
-    x = module.exports.unpack rows, 'date'
-      .slice 0, rows.length - period + 1
+    x = module.exports.unpack(rows, 'date')[-period..]
     y = EMA.calculate {period, values}
     x.map (date, i) ->
       date: date
       ema: y[i]
 
   indicators: (rows) ->
+    rows = _.sortBy rows, 'date'
     max = _.maxBy(rows, 'high').high
     min = _.minBy(rows, 'low').low
     close = _.maxBy(rows, 'date').close
     open = _.minBy(rows, 'date').open
     ema = [
-      module.exports.ema rows, 20 - 1
-      module.exports.ema rows, 60 - 1
-      module.exports.ema rows, 120 - 1
+      module.exports.ema rows, 20
+      module.exports.ema rows, 60
+      module.exports.ema rows, 120
     ]
     'c/s': rows[0].close / ema[0][0].ema
     's/m': ema[0][0].ema / ema[1][0].ema
@@ -162,8 +163,20 @@ module.exports =
 
   data: {}
 
-  alert: (client) ->
-    {CandleGranularity, ProductEvent} = require 'coinbase-pro-node'
-    client.on ProductEvent.NEW_CANDLE, (msg) ->
-      {product_id, granularity, candle} = msg
-      console.log JSON.stringify msg, null, 2
+  alert: (client, product='ETH-USD', granularity=CandleGranularity.ONE_MINUTE) ->
+    end = moment()
+    start = moment().subtract 121 * granularity, 'seconds'
+    rows = (await client.product.getCandles product, { granularity, start, end }).map (row) ->
+      _.extend row, date: row.openTimeInMillis / 1000
+    latestCandle = rows[rows.length - 1]
+    latestOpen = latestCandle.openTimeInISO
+    client.product.watchCandles product, granularity, latestOpen
+    {Readable} = require 'stream'
+    new Readable
+      objectMode: true
+      construct: ->
+        @push module.exports.indicators rows
+        client.on ProductEvent.NEW_CANDLE, (product, granularity, data) =>
+          rows.push _.extend(data, date: data.openTimeInMillis / 1000)
+          rows.shift()
+          @push module.exports.indicators rows
