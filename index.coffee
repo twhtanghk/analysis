@@ -159,3 +159,11 @@ module.exports =
           volume: curr.volume
         curr = {date, price, volume}
         ret
+
+  data: {}
+
+  alert: (client) ->
+    {CandleGranularity, ProductEvent} = require 'coinbase-pro-node'
+    client.on ProductEvent.NEW_CANDLE, (msg) ->
+      {product_id, granularity, candle} = msg
+      console.log JSON.stringify msg, null, 2
