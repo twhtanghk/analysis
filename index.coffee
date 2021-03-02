@@ -34,15 +34,15 @@ module.exports =
       row[key]
 
   ema: (rows, period) ->
+    rows = _.orderBy rows, ['date'], ['desc']
     values = module.exports.unpack rows, 'close'
-    x = module.exports.unpack(rows, 'date')[-period..]
+    x = module.exports.unpack(rows, 'date')
     y = EMA.calculate {period, values}
     x.map (date, i) ->
       date: date
       ema: y[i]
 
   indicators: (rows) ->
-    rows = _.sortBy rows, 'date'
     max = _.maxBy(rows, 'high').high
     min = _.minBy(rows, 'low').low
     close = _.maxBy(rows, 'date').close
@@ -52,7 +52,7 @@ module.exports =
       module.exports.ema rows, 60
       module.exports.ema rows, 120
     ]
-    'c/s': rows[0].close / ema[0][0].ema
+    'c/s': close / ema[0][0].ema
     's/m': ema[0][0].ema / ema[1][0].ema
     'm/l': ema[1][0].ema / ema[2][0].ema
     'max': max
@@ -165,7 +165,7 @@ module.exports =
 
   alert: (client, product='ETH-USD', granularity=CandleGranularity.ONE_MINUTE) ->
     end = moment()
-    start = moment().subtract 121 * granularity, 'seconds'
+    start = moment().subtract 120 * granularity, 'seconds'
     rows = (await client.product.getCandles product, { granularity, start, end }).map (row) ->
       _.extend row, date: row.openTimeInMillis / 1000
     latestCandle = rows[rows.length - 1]
