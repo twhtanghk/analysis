@@ -1,5 +1,6 @@
 _ = require 'lodash'
 Promise = require 'bluebird'
+{Readable} = require 'stream'
 {getHistoricalPrices} = require 'yahoo-stock-api'
 moment = require 'moment'
 url = 'https://api.thegraph.com/subgraphs/name/uniswap/uniswap-v2'
@@ -161,22 +162,32 @@ module.exports =
         curr = {date, price, volume}
         ret
 
-  data: {}
-
-  alert: (client, product='ETH-USD', granularity=CandleGranularity.ONE_MINUTE) ->
-    end = moment()
-    start = moment().subtract 120 * granularity, 'seconds'
-    rows = (await client.product.getCandles product, { granularity, start, end }).map (row) ->
-      _.extend row, date: row.openTimeInMillis / 1000
-    latestCandle = rows[rows.length - 1]
-    latestOpen = latestCandle.openTimeInISO
-    client.product.watchCandles product, granularity, latestOpen
-    {Readable} = require 'stream'
-    new Readable
-      objectMode: true
-      construct: ->
-        @push module.exports.indicators rows
-        client.on ProductEvent.NEW_CANDLE, (product, granularity, data) =>
-          rows.push _.extend(data, date: data.openTimeInMillis / 1000)
-          rows.shift()
-          @push module.exports.indicators rows
+  stream:
+    candle: (client, product='ETH-USD', granularity=CandleGranularity.ONE_MINUTE, n=1) ->
+      end = moment()
+      start = moment().subtract n * granularity, 'seconds'
+      rows = (await client.rest.product.getCandles product, { granularity, start, end }).map (row) ->
+        _.extend row, date: row.openTimeInMillis / 1000
+      latestOpen = rows[rows.length - 1].openTimeInISO
+      client.rest.product.watchCandles product, granularity, latestOpen
+      new Readable
+        objectMode: true
+        construct: ->
+          rows.map (row) => @push row
+          client.rest
+            .on ProductEvent.NEW_CANDLE, (product, granularity, data) =>
+              @push _.extend(data, date: data.openTimeInMillis / 1000)
+    
+    indicators: (client, product='ETH-USD', granularity=CandleGranularity.ONE_MINUTE) ->
+      new Readable
+        objectMode: true
+        read: -> @pause()
+        construct: ->
+          rows = []
+          (await module.exports.stream.candle client, product, granularity, 120)
+            .on 'data', (data) =>
+              rows.push data
+              if rows.length >= 120
+                @push module.exports.indicators rows
+                @resume()
+                rows = rows[-120..]
