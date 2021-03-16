@@ -1,10 +1,12 @@
 _ = require 'lodash'
 Promise = require 'bluebird'
+{Readable} = require 'stream'
 {getHistoricalPrices} = require 'yahoo-stock-api'
 moment = require 'moment'
 url = 'https://api.thegraph.com/subgraphs/name/uniswap/uniswap-v2'
 needle = require 'needle'
 {EMA} = require 'technicalindicators'
+{CandleGranularity, ProductEvent} = require 'coinbase-pro-node'
 
 module.exports =
   pattern:
@@ -33,9 +35,9 @@ module.exports =
       row[key]
 
   ema: (rows, period) ->
+    rows = _.orderBy rows, ['date'], ['desc']
     values = module.exports.unpack rows, 'close'
-    x = module.exports.unpack rows, 'date'
-      .slice 0, rows.length - period + 1
+    x = module.exports.unpack(rows, 'date')
     y = EMA.calculate {period, values}
     x.map (date, i) ->
       date: date
@@ -47,11 +49,11 @@ module.exports =
     close = _.maxBy(rows, 'date').close
     open = _.minBy(rows, 'date').open
     ema = [
-      module.exports.ema rows, 20 - 1
-      module.exports.ema rows, 60 - 1
-      module.exports.ema rows, 120 - 1
+      module.exports.ema rows, 20
+      module.exports.ema rows, 60
+      module.exports.ema rows, 120
     ]
-    'c/s': rows[0].close / ema[0][0].ema
+    'c/s': close / ema[0][0].ema
     's/m': ema[0][0].ema / ema[1][0].ema
     'm/l': ema[1][0].ema / ema[2][0].ema
     'max': max
@@ -159,3 +161,33 @@ module.exports =
           volume: curr.volume
         curr = {date, price, volume}
         ret
+
+  stream:
+    candle: (client, product='ETH-USD', granularity=CandleGranularity.ONE_MINUTE, n=1) ->
+      end = moment()
+      start = moment().subtract n * granularity, 'seconds'
+      rows = (await client.rest.product.getCandles product, { granularity, start, end }).map (row) ->
+        _.extend row, date: row.openTimeInMillis / 1000
+      latestOpen = rows[rows.length - 1].openTimeInISO
+      client.rest.product.watchCandles product, granularity, latestOpen
+      new Readable
+        objectMode: true
+        construct: ->
+          rows.map (row) => @push row
+          client.rest
+            .on ProductEvent.NEW_CANDLE, (product, granularity, data) =>
+              @push _.extend(data, date: data.openTimeInMillis / 1000)
+    
+    indicators: (client, product='ETH-USD', granularity=CandleGranularity.ONE_MINUTE) ->
+      new Readable
+        objectMode: true
+        read: -> @pause()
+        construct: ->
+          rows = []
+          (await module.exports.stream.candle client, product, granularity, 120)
+            .on 'data', (data) =>
+              rows.push data
+              if rows.length >= 120
+                @push module.exports.indicators rows
+                @resume()
+                rows = rows[-120..]
