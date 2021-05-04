@@ -3,6 +3,8 @@ Promise = require 'bluebird'
 {Readable} = require 'stream'
 {getHistoricalPrices} = require 'yahoo-stock-api'
 moment = require 'moment'
+{PublicClient} = require 'coinbase-pro-node-api'
+client = new PublicClient()
 url = 'https://api.thegraph.com/subgraphs/name/uniswap/uniswap-v2'
 needle = require 'needle'
 {EMA} = require 'technicalindicators'
@@ -53,12 +55,15 @@ module.exports =
       module.exports.ema rows, 60
       module.exports.ema rows, 120
     ]
-    'c/s': close / ema[0][0].ema
-    's/m': ema[0][0].ema / ema[1][0].ema
-    'm/l': ema[1][0].ema / ema[2][0].ema
+    'c/s': (close - ema[0][0].ema) / ema[0][0].ema * 100
+    's/m': (ema[0][0].ema - ema[1][0].ema) / ema[1][0].ema * 100
+    'm/l': (ema[1][0].ema - ema[2][0].ema) / ema[2][0].ema * 100
     'max': max
     'min': min
     'close': close
+    'ema20': ema[0][0].ema
+    'ema60': ema[1][0].ema
+    'ema120': ema[2][0].ema
     'open': open
     'diff': 
       'up': (max - close) / close * 100
@@ -143,24 +148,29 @@ module.exports =
       response.filter (row) ->
         not row.type
 
-    cryptoCurr: (symbol, days=365) ->
-      {id} = (await module.exports.graphQL "{tokens (first: 1, orderDirection: desc, orderBy: tradeVolume, where: {name: \"#{symbol}\"}) { id symbol name tradeVolume }}")
-        .body.data.tokens[0]
-      data = (await module.exports.graphQL "{tokenDayDatas (first: #{days}, orderBy: date, orderDirection: desc, where:{token: \"#{id}\"}){ id date priceUSD dailyVolumeUSD } }")
-        .body.data.tokenDayDatas
-        .map ({date, dailyVolumeUSD, priceUSD}) ->
-          {date, price: priceUSD, volume: dailyVolumeUSD}
-      curr = data[0]
-      data[1..].map ({date, price, volume}) ->
-        ret = 
-          date: curr.date
-          open: parseFloat price
-          high: Math.max price, curr.price
-          low: Math.min price, curr.price
-          close: parseFloat curr.price
-          volume: curr.volume
-        curr = {date, price, volume}
-        ret
+    ###
+    opts:
+      product_id: (default BTC-USD)
+      granularity: (optional with default 300s)
+      start: start time in ISO string format (optional with default 120 historical data)
+      end: start time in ISO string format (optional with default now))
+    ###
+    cryptoCurr: (opts = {}) ->
+      _.defaults opts,
+        granularity: 300 # default 300s if not defined
+      end = moment()
+      start = moment.unix(end.unix() - opts.granularity * 120)
+      _.defaults opts,
+        end: end.toISOString()
+        start: start.toISOString()
+      (await client.getHistoricRates opts)
+        .map ([time, low, high, open, close, volume]) ->
+          date: time
+          low: low
+          high: high
+          open: open
+          close: close
+          volume: volume
 
   stream:
     candle: (client, product='ETH-USD', granularity=CandleGranularity.ONE_MINUTE, n=1) ->
