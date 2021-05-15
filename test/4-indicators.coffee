@@ -6,4 +6,4 @@ describe 'indicators', ->
 
   it 'eth-btc', ->
     for i in [60, 300, 900, 3600, 21600, 86400]
-      console.log indicators await ohlc.cryptoCurr product_id: 'ETH-BTC', granularity: i
+      console.log indicators await ohlc.cryptoCurr product_id: 'ETH-USDC', granularity: i
