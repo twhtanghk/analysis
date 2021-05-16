@@ -27,8 +27,8 @@ describe 'stream', ->
       res
     , {}
     # count positive or negative value of c/s, s/m, m/l for 1, 5, 15 min, 1 hr
-    score = (res) ->
-      min = [0..3].map (i) -> res[granularity[i]]
+    score = (data) ->
+      min = [0..3].map (i) -> data[granularity[i]]
       _.sumBy min, (d) ->
          Math.sign(d['c/s']) + Math.sign(d['s/m']) + Math.sign(d['m/l'])
     granularity.map (i) ->
@@ -36,5 +36,5 @@ describe 'stream', ->
         .pipe new Writable objectMode: true, write: (data, encoding, cb) ->
           res[i] = data
           console.log JSON.stringify res, null, 2
-          console.log score res
+          console.log "#{new Date()}: #{score res}"
           cb()

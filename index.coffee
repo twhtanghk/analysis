@@ -185,8 +185,9 @@ module.exports =
         construct: ->
           rows.map (row) => @push row
           client.rest
-            .on ProductEvent.NEW_CANDLE, (product, granularity, data) =>
-              @push _.extend(data, date: data.openTimeInMillis / 1000)
+            .on ProductEvent.NEW_CANDLE, (product, currGranularity, data) =>
+              if granularity == currGranularity
+                @push _.extend(data, date: data.openTimeInMillis / 1000)
     
     indicators: (client, product='ETH-USD', granularity=CandleGranularity.ONE_MINUTE) ->
       new Readable
