@@ -46,6 +46,9 @@ module.exports =
       ema: y[i]
 
   indicators: (rows) ->
+    # filter invalid data
+    rows = rows.filter ({close}) ->
+      close?
     max = _.maxBy(rows, 'high').high
     min = _.minBy(rows, 'low').low
     close = _.maxBy(rows, 'date').close
