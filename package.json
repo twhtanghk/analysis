@@ -18,17 +18,17 @@
   "homepage": "https://github.com/twhtanghk/analysis#readme",
   "dependencies": {
     "bluebird": "^3.7.2",
-    "coffeescript": "^2.5.1",
-    "coinbase-pro-node": "^2.18.1",
+    "coffeescript": "^2.6.1",
+    "coinbase-pro-node": "^3.0.8",
     "coinbase-pro-node-api": "^2.0.1",
-    "lodash": "^4.17.20",
+    "lodash": "^4.17.21",
     "moment": "^2.29.1",
-    "mqtt": "^4.2.6",
-    "needle": "^2.5.2",
+    "mqtt": "^4.2.8",
+    "needle": "^3.0.0",
     "technicalindicators": "^3.1.0",
-    "yahoo-stock-api": "^1.0.5"
+    "yahoo-stock-api": "^1.0.11"
   },
   "devDependencies": {
-    "mocha": "^7.2.0"
+    "mocha": "^9.1.3"
   }
 }
