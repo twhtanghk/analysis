@@ -205,3 +205,32 @@ module.exports =
                 @push module.exports.indicators rows
                 @resume()
                 rows = rows[-120..]
+
+    # count positive or negative value of c/s, s/m, m/l for 1, 5, 15min, 1hr
+    # score range from -12 to 12
+    score: (client, product='ETH-USD') ->
+      new Readable
+        objectMode: true
+        read: -> @pause()
+        construct: ->
+          granularity = [
+            'ONE_MINUTE'
+            'FIVE_MINUTES'
+            'FIFTEEN_MINUTES'
+            'ONE_HOUR'
+          ]
+          res = granularity.reduce ((res, k) ->
+            res[k] = {}
+            res), {}
+          score = (data) ->
+            min = [0..3].map (i) -> data[granularity[i]]
+            _.sumBy min, (d) ->
+              Math.sign(d['c/s']) + Math.sign(d['s/m']) + Math.sign(d['m/l'])
+          push = (d) =>
+            @push d
+            @resume()
+          granularity.map (i) ->
+            (module.exports.stream.indicators client, product, CandleGranularity[i])
+              .on 'data', (chunk) ->
+                res[i] = chunk
+                push score res
