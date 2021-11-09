@@ -188,8 +188,8 @@ module.exports =
         construct: ->
           rows.map (row) => @push row
           client.rest
-            .on ProductEvent.NEW_CANDLE, (product, currGranularity, data) =>
-              if granularity == currGranularity
+            .on ProductEvent.NEW_CANDLE, (currProduct, currGranularity, data) =>
+              if product == currProduct and granularity == currGranularity
                 @push _.extend(data, date: data.openTimeInMillis / 1000)
     
     indicators: (client, product='ETH-USD', granularity=CandleGranularity.ONE_MINUTE) ->
@@ -219,9 +219,9 @@ module.exports =
             'FIFTEEN_MINUTES'
             'ONE_HOUR'
           ]
-          res = granularity.reduce ((res, k) ->
-            res[k] = {}
-            res), {}
+          res = granularity.reduce ((acc, k) ->
+            acc[k] = {}
+            acc), {}
           score = (data) ->
             min = [0..3].map (i) -> data[granularity[i]]
             _.sumBy min, (d) ->
