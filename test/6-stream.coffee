@@ -6,7 +6,11 @@ client = new CoinbasePro()
 
 describe 'stream', ->
   it 'score', ->
-    stream
-      .score client, 'ETH-USD'
-      .on 'data', (chunk) ->
-         console.log "#{new Date()}: #{chunk}"
+    [
+      'BTC-USD'
+      'ETH-USD'
+    ].map (product) ->
+      stream
+        .score client, product
+        .on 'data', (chunk) ->
+          console.log "#{new Date()}: #{product} #{chunk}"
