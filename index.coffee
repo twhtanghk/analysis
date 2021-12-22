@@ -15,7 +15,18 @@ module.exports =
     aastock: /^0*([0-9]+)$/
     yahoo: /^0*([0-9]+)\.HK$/
 
-  symbol: 
+  symbol:
+    # parse '5' parse '5.hk' = {symbol: '5', exchange: 'hk'}
+    # parse '2466.sz' = {symbol: '2466', exchange: 'sz'}
+    parse: (code) ->
+      ret = /^(\w+)\.*(\w*)/.exec code
+      if ret != null
+        if ret[2] == ''
+          ret[2] = 'hk'  
+        symbol: ret[1]
+        exchange: ret[2]
+      else
+        null
     yahoo: (code) ->
       {aastock, yahoo} = module.exports.pattern
       ret = code
