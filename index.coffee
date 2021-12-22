@@ -15,7 +15,18 @@ module.exports =
     aastock: /^0*([0-9]+)$/
     yahoo: /^0*([0-9]+)\.HK$/
 
-  symbol: 
+  symbol:
+    # parse '5' parse '5.hk' = {symbol: '5', exchange: 'hk'}
+    # parse '2466.sz' = {symbol: '2466', exchange: 'sz'}
+    parse: (code) ->
+      ret = /^(\w+)\.*(\w*)/.exec code
+      if ret != null
+        if ret[2] == ''
+          ret[2] = 'hk'  
+        symbol: ret[1]
+        exchange: ret[2]
+      else
+        null
     yahoo: (code) ->
       {aastock, yahoo} = module.exports.pattern
       ret = code
@@ -188,8 +199,8 @@ module.exports =
         construct: ->
           rows.map (row) => @push row
           client.rest
-            .on ProductEvent.NEW_CANDLE, (product, currGranularity, data) =>
-              if granularity == currGranularity
+            .on ProductEvent.NEW_CANDLE, (currProduct, currGranularity, data) =>
+              if product == currProduct and granularity == currGranularity
                 @push _.extend(data, date: data.openTimeInMillis / 1000)
     
     indicators: (client, product='ETH-USD', granularity=CandleGranularity.ONE_MINUTE) ->
@@ -205,3 +216,32 @@ module.exports =
                 @push module.exports.indicators rows
                 @resume()
                 rows = rows[-120..]
+
+    # count positive or negative value of c/s, s/m, m/l for 1, 5, 15min, 1hr
+    # score range from -12 to 12
+    score: (client, product='ETH-USD') ->
+      new Readable
+        objectMode: true
+        read: -> @pause()
+        construct: ->
+          granularity = [
+            'ONE_MINUTE'
+            'FIVE_MINUTES'
+            'FIFTEEN_MINUTES'
+            'ONE_HOUR'
+          ]
+          res = granularity.reduce ((acc, k) ->
+            acc[k] = {}
+            acc), {}
+          score = (data) ->
+            min = [0..3].map (i) -> data[granularity[i]]
+            _.sumBy min, (d) ->
+              Math.sign(d['c/s']) + Math.sign(d['s/m']) + Math.sign(d['m/l'])
+          push = (d) =>
+            @push d
+            @resume()
+          granularity.map (i) ->
+            (module.exports.stream.indicators client, product, CandleGranularity[i])
+              .on 'data', (chunk) ->
+                res[i] = chunk
+                push score res
