@@ -9,6 +9,8 @@ url = 'https://api.thegraph.com/subgraphs/name/uniswap/uniswap-v2'
 needle = require 'needle'
 {EMA} = require 'technicalindicators'
 {CandleGranularity, ProductEvent} = require 'coinbase-pro-node'
+DF = require 'data-forge'
+require 'data-forge-indicators'
 
 module.exports =
   pattern:
@@ -246,30 +248,37 @@ module.exports =
                 res[i] = chunk
                 push score res
 
-  dataForgeIndicators: (rows, {s,m,l}={s:20, m:60, l:120}) ->
-    DF = require 'data-forge'
-    require 'data-forge-indicators'
-    rows = rows
-      .filter ({close}) ->
-        close?
-      .map (r) ->
-        _.extend r, date: new Date r.date * 1000
-    rows = (new DF.DataFrame rows)
-      .setIndex 'date'
-      .orderBy (r) ->
-        r.date
-    close = rows
-      .deflate (r) ->
-        r.close
-    ema = [
-      close.ema s
-      close.ema m
-      close.ema l
-    ]
-    rows = rows
-      .withSeries 'emaS', ema[0]
-      .withSeries 'emaM', ema[1]
-      .withSeries 'emaL', ema[2]
+  dataForgeIndicators: 
+    validate: (rows) ->
+      rows = rows
+        .filter ({close}) ->
+          close?
+        .map (r) ->
+          _.extend r, date: new Date r.date * 1000
+      (new DF.DataFrame rows)
+        .setIndex 'date'
+        .orderBy (r) ->
+          r.date
+    rsi: (rows, range=14) ->
+      rsi = rows
+        .deflate (r) ->
+          r.close
+        .rsi range
+      rows
+        .withSeries 'rsi', rsi
+    ema: (rows, {s,m,l}={s:20, m:60, l:120}) ->
+      close = rows
+        .deflate (r) ->
+          r.close
+      ema = [
+        close.ema s
+        close.ema m
+        close.ema l
+      ]
+      rows = rows
+        .withSeries 'emaS', ema[0]
+        .withSeries 'emaM', ema[1]
+        .withSeries 'emaL', ema[2]
 
   signals:
     goldenCross: ({close, emaS, emaM, emaL}, nCross=2) ->

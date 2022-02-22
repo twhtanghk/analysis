@@ -4,11 +4,13 @@ describe 'grademark', ->
   rows = null
 
   it 'ohlc data', ->
-    rows = await ohlc.stock '7200'
+    rows = await ohlc.stock '7200', 365
     console.log rows
 
   it 'data forge indicators', ->
-    rows = dataForgeIndicators rows
+    rows = dataForgeIndicators.validate rows
+    rows = dataForgeIndicators.ema rows
+    rows = dataForgeIndicators.rsi rows
     console.log rows.toJSON()
 
   it 'backtest', ->
