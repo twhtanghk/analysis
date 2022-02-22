@@ -245,3 +245,61 @@ module.exports =
               .on 'data', (chunk) ->
                 res[i] = chunk
                 push score res
+
+  dataForgeIndicators: (rows, {s,m,l}={s:20, m:60, l:120}) ->
+    DF = require 'data-forge'
+    require 'data-forge-indicators'
+    rows = rows
+      .filter ({close}) ->
+        close?
+      .map (r) ->
+        _.extend r, date: new Date r.date * 1000
+    rows = (new DF.DataFrame rows)
+      .setIndex 'date'
+      .orderBy (r) ->
+        r.date
+    close = rows
+      .deflate (r) ->
+        r.close
+    ema = [
+      close.ema s
+      close.ema m
+      close.ema l
+    ]
+    rows = rows
+      .withSeries 'emaS', ema[0]
+      .withSeries 'emaM', ema[1]
+      .withSeries 'emaL', ema[2]
+
+  signals:
+    goldenCross: ({close, emaS, emaM, emaL}, nCross=2) ->
+      switch nCross
+        when 1
+          close >= emaS
+        when 2
+          close >= emaS and emaS >= emaM
+        when 3
+          close >= emaS and emaS >= emaM and emaM >= emaL
+        else
+          false
+    deadCross: ({close, emaS, emaM, emaL}, nCross=2) ->
+      switch nCross
+        when 1
+          close <= emaS
+        when 2
+          close <= emaS and emaS <= emaM
+        when 3
+          close <= emaS and emaS <= emaM and emaM <= emaL
+        else
+          false
+
+  strategy:
+    movAverage: (stopLoss=5/100) ->
+      entryRule: (enterPosition, args) ->
+        if module.exports.signals.goldenCross args.bar
+          enterPosition direction: 'long'
+      exitRule: (exitPosition, args) ->
+        if module.exports.signals.deadCross args.bar
+          exitPosition()
+      stopLoss: (args) ->
+        args.entryPrice * stopLoss
