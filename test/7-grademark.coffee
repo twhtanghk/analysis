@@ -18,7 +18,7 @@ describe 'grademark', ->
     {backtest, analyze} = require 'grademark'
     rows = rows.renameSeries date: 'time'
     console.log rows.toJSON()
-    trades = backtest strategy.movThree(), rows  
+    trades = backtest strategy.rsiThree(), rows  
     analysis = analyze 100000, trades
     console.log trades
     console.log analysis

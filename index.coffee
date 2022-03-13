@@ -311,6 +311,10 @@ module.exports =
       streaks == -3
     threeWhiteSoldiers: ({streaks}) ->
       streaks == 3
+    rsiBuy: ({rsi}) ->
+      rsi <= 40
+    rsiSell: ({rsi}) ->
+      rsi >= 60
 
   strategy:
     movAverage: (stopLoss=5/100) ->
@@ -338,6 +342,16 @@ module.exports =
           enterPosition direction: 'long'
       exitRule: (exitPosition, args) ->
         if deadCross(args.bar) and threeBlackCrows(args.bar)
+          exitPosition()
+      stopLoss: (args) ->
+        args.entryPrice * stopLoss
+    rsiThree: (stopLoss=5/100) ->
+      {rsiBuy, rsiSell, threeWhiteSoldiers, threeBlackCrows} = module.exports.signals
+      entryRule: (enterPosition, args) ->
+        if rsiBuy(args.bar) and threeWhiteSoldiers(args.bar)
+          enterPosition direction: 'long'
+      exitRule: (exitPosition, args) ->
+        if rsiSell(args.bar) and threeBlackCrows(args.bar)
           exitPosition()
       stopLoss: (args) ->
         args.entryPrice * stopLoss
