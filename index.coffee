@@ -279,7 +279,13 @@ module.exports =
         .withSeries 'emaS', ema[0]
         .withSeries 'emaM', ema[1]
         .withSeries 'emaL', ema[2]
-
+    streaks: (rows, days=3) ->
+      ret = rows
+        .deflate (r) ->
+          r.close
+        .streaks days
+      rows
+        .withSeries 'streaks', ret
   signals:
     goldenCross: ({close, emaS, emaM, emaL}, nCross=2) ->
       switch nCross
@@ -301,6 +307,10 @@ module.exports =
           close <= emaS and emaS <= emaM and emaM <= emaL
         else
           false
+    threeBlackCrows: ({streaks}) ->
+      streaks == -3
+    threeWhiteSoldiers: ({streaks}) ->
+      streaks == 3
 
   strategy:
     movAverage: (stopLoss=5/100) ->
@@ -309,6 +319,25 @@ module.exports =
           enterPosition direction: 'long'
       exitRule: (exitPosition, args) ->
         if module.exports.signals.deadCross args.bar
+          exitPosition()
+      stopLoss: (args) ->
+        args.entryPrice * stopLoss
+    three: (stopLoss=5/100) ->
+      entryRule: (enterPosition, args) ->
+        if module.exports.signals.threeWhiteSoldiers args.bar
+          enterPosition direction: 'long'
+      exitRule: (exitPosition, args) ->
+        if module.exports.signals.threeBlackCrows args.bar
+          exitPosition()
+      stopLoss: (args) ->
+        args.entryPrice * stopLoss
+    movThree: (stopLoss=5/100) ->
+      {goldenCross, deadCross, threeWhiteSoldiers, threeBlackCrows} = module.exports.signals
+      entryRule: (enterPosition, args) ->
+        if goldenCross(args.bar) and threeWhiteSoldiers(args.bar)
+          enterPosition direction: 'long'
+      exitRule: (exitPosition, args) ->
+        if deadCross(args.bar) and threeBlackCrows(args.bar)
           exitPosition()
       stopLoss: (args) ->
         args.entryPrice * stopLoss
