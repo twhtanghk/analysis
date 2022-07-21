@@ -7,8 +7,8 @@ client = Promise.promisifyAll new finnhub.DefaultApi()
 # resolution: 1, 5, 15, 30, 60, D, W, M
 # from and to: Date
 client.stockOhlc = ({symbol, resolution, from, to}) ->
-  from = from.getTime() / 1000
-  to = to.getTime() /1000
+  from = Math.round from.getTime() / 1000
+  to = Math.round to.getTime() /1000
   {o, h, l, c, t, v} = await client.stockCandlesAsync symbol, resolution, from, to
   o.map (v, i) ->
     open: o[i]
@@ -16,6 +16,6 @@ client.stockOhlc = ({symbol, resolution, from, to}) ->
     low: l[i]
     close: c[i]
     volume: v[i]
-    date: t[i]
+    date: new Date t[i] * 1000
 
 module.exports = client

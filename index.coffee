@@ -129,6 +129,32 @@ module.exports =
       date: new Date parseInt date
       percent: percent
           
+  # return market breadth for list of stock data
+  # ohlcList:
+  #   [
+  #     { symbol: 'xxxx',  data: {open: xx, high: xx, low: xx, close: xx,  volume: xx, date: Date }
+  #     ...
+  #   ]
+  dataBreadth: (ohlcList) ->
+    ret = {}
+    ohlcList.map ({symbol, data}) ->
+      module.exports
+        .ema data, 20
+        .map ({date, ema}) ->
+          if ema?
+            ret[date] ?= {}
+            ret[date][symbol] =
+              ema: ema
+              close: _.find(data, date: date).close
+    for date, set of ret
+      overEMA = 0
+      length = (symbol for symbol, {ema, close} of set).length
+      for symbol, {ema, close} of set
+        if close >= ema
+          overEMA++
+      ret[date] = overEMA / length * 100
+    ret
+
   peers: (peerSymbol) ->
     client = require 'mqtt'
       .connect process.env.MQTTURL,
